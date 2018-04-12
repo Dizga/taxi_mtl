@@ -1,0 +1,50 @@
+version: '3'
+services:
+    postgres:
+        image: postgres:9.6
+        environment:
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
+            - PGDATA=/var/lib/postgresql/data
+        volumes:
+            - pg1-data:/var/lib/postgresql/data
+
+    webserver:
+        image: puckel/docker-airflow:1.9.0-2
+        restart: always
+        depends_on:
+            - postgres
+        environment:
+            - LOAD_EX=n
+            - EXECUTOR=Local
+            - FERNET_KEY=my-local-fernet-key
+        volumes:
+            - ./dags:/usr/local/airflow/dags
+            # Uncomment to include custom plugins
+            # - ./plugins:/usr/local/airflow/plugins
+        ports:
+            - "8080:8080"
+        command: webserver
+
+    phpadmin:
+        image: zhajor/docker-phppgadmin
+        ports:
+            - "8081:80"
+        environment:
+            - DB_HOST=data
+            - DB_PORT=5432
+
+    data:
+        image: postgres:9.6
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_DB=allinall
+            - PGDATA=/var/lib/postgresql/data
+        volumes:
+            - data-volume:/var/lib/postgresql/data
+
+volumes:
+    pg1-data: {}
+    data-volume: {}
