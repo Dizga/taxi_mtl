@@ -13,20 +13,25 @@ headers = {'X-API-KEY': 'fcf1c741-e5b5-4c5e-a965-2598461b4836'}
 # attributes = ['taxi', 'lat', 'lon', 'version', 'device', 'operator', 'timestampUTC', 'status', 'speed', 'azimuth']
 attributes = ['taxi', 'operator', 'timestampUTC', 'status']
 
-# %%
-session = requests.Session()
-session.headers.update(headers)
-req = requests.Request('GET', url_taxis, headers=headers)
-prepped_request = session.prepare_request(req)
+requests.get(url_positions, headers=headers).content
 
-response = session.send(prepped_request)
-pd.read_json(response.content)
-# %%
 positions = json.loads(requests.get(url_positions, headers=headers).content)
 
 df_vehicles = pd.read_json(requests.get(url_vehicles, headers=headers).content)
 df_taxis = pd.read_json(requests.get(url_taxis, headers=headers).content)
 df_ads = pd.read_json(requests.get(url_ads, headers=headers).content)
+
+
+# %%
+
+df_taxis = df_taxis[["ads_id", "vehicle_id"]]
+df_vehicles = df_vehicles[["id", "special_need_vehicle"]]
+df_ads = df_ads[["id", "vdm_vignette"]]
+
+test = pd.merge(df_taxis, df_ads, left_on=['ads_id'], right_on=['id'])
+
+
+# %%
 
 D = OrderedDict()
 for attribute in attributes:

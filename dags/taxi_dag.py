@@ -5,14 +5,14 @@ http://airflow.readthedocs.org/en/latest/tutorial.html
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
-from taxi import get_taxi_data
+from taxi import get_taxi_data, transform_taxi_data, load_taxi_data, get_position_taxi
 from datetime import datetime, timedelta
 
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2018, 4, 12),
+    'start_date': datetime(2018, 4, 17),
     'email': ['airflow@airflow.com'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -25,11 +25,14 @@ default_args = {
 }
 
 dag = DAG(
-    'taxi', default_args=default_args, schedule_interval=timedelta(1))
+    'taxi', default_args=default_args,
+    schedule_interval='0 */10 * * *'
+    # "*/10 * * * *"
+    )
 
 # t1, t2 and t3 are examples of tasks created by instantiating operators
-extract_data = PythonOperator(
-        task_id='get_data_taxi',
+extract_data_taxis = PythonOperator(
+        task_id='extract_data_taxis',
         python_callable=get_taxi_data,
         provide_context=True,
         op_args=[
@@ -38,28 +41,55 @@ extract_data = PythonOperator(
         ],
         dag=dag
 )
+extract_data_ads = PythonOperator(
+        task_id='extract_data_ads',
+        python_callable=get_taxi_data,
+        provide_context=True,
+        op_args=[
+            'taxi_mtl',
+            'ads'
+        ],
+        dag=dag
+)
+extract_data_vehicles = PythonOperator(
+        task_id='extract_data_vehicles',
+        python_callable=get_taxi_data,
+        provide_context=True,
+        op_args=[
+            'taxi_mtl',
+            'vehicles'
+        ],
+        dag=dag
+)
 
-t2 = BashOperator(
-    task_id='sleep',
-    bash_command='sleep 5',
-    retries=3,
-    dag=dag)
+extract_data_positions = PythonOperator(
+        task_id='extract_data_positions',
+        python_callable=get_position_taxi,
+        provide_context=True,
+        op_args=[
+            'taxi_mtl'
+        ],
+        dag=dag
+)
 
-templated_command = """
-    {% for i in range(5) %}
-        echo "{{ ds }}"
-        echo "{{ macros.ds_add(ds, 7)}}"
-        echo "{{ params.my_param }}"
-    {% endfor %}
-"""
+transform_data = PythonOperator(
+        task_id='transform_data_taxi',
+        python_callable=transform_taxi_data,
+        provide_context=True,
+        dag=dag
+)
 
-t3 = BashOperator(
-    task_id='templated',
-    bash_command=templated_command,
-    params={'my_param': 'Parameter I passed in'},
-    dag=dag)
+load_data = PythonOperator(
+        task_id='load_data_taxi',
+        python_callable=load_taxi_data,
+        provide_context=True,
+        op_args=[
+            'home_taxi_mtl'
+        ],
+        dag=dag
+)
 
-extract_data >> t2 >> t3
-
-# t2.set_upstream(t1)
-# t3.set_upstream(t1)
+extract_data_ads >> transform_data >> load_data
+extract_data_taxis >> transform_data
+extract_data_vehicles >> transform_data
+extract_data_positions >> transform_data
