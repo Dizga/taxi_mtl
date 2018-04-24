@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2018, 4, 17),
+    'start_date': datetime(2018, 4, 24),
     'email': ['airflow@airflow.com'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -26,8 +26,8 @@ default_args = {
 
 dag = DAG(
     'taxi', default_args=default_args,
-    schedule_interval='0 */10 * * *'
-    # "*/10 * * * *"
+    schedule_interval='0 */10 * * 1',
+    catchup=False
     )
 
 # t1, t2 and t3 are examples of tasks created by instantiating operators

@@ -2,7 +2,8 @@ import json
 import requests
 import pandas as pd
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timedelta
+import psycopg2
 
 url_positions = 'https://taximtl.accept.ville.montreal.qc.ca/api/data-dumps/taxi-positions/2018-03-21T20:10:00.000Z'
 url_taxis = 'https://taximtl.accept.ville.montreal.qc.ca/api/data-dumps/taxis'
@@ -13,9 +14,9 @@ headers = {'X-API-KEY': 'fcf1c741-e5b5-4c5e-a965-2598461b4836'}
 # attributes = ['taxi', 'lat', 'lon', 'version', 'device', 'operator', 'timestampUTC', 'status', 'speed', 'azimuth']
 attributes = ['taxi', 'operator', 'timestampUTC', 'status']
 
-requests.get(url_positions, headers=headers).content
+positions = requests.get(url_positions, headers=headers).json()
 
-positions = json.loads(requests.get(url_positions, headers=headers).content)
+# positions = json.loads(requests.get(url_positions, headers=headers).content)
 
 df_vehicles = pd.read_json(requests.get(url_vehicles, headers=headers).content)
 df_taxis = pd.read_json(requests.get(url_taxis, headers=headers).content)
@@ -24,12 +25,23 @@ df_ads = pd.read_json(requests.get(url_ads, headers=headers).content)
 
 # %%
 
-df_taxis = df_taxis[["ads_id", "vehicle_id"]]
-df_vehicles = df_vehicles[["id", "special_need_vehicle"]]
-df_ads = df_ads[["id", "vdm_vignette"]]
+conn = psycopg2.connect("host=172.20.0.4 dbname=allinall user=postgres password=postgres")
+cur = conn.cursor()
+try:
+    cur.execute("SELECT * FROM last_connection")
+    tmp = cur.fetchall()
+except psycopg2.Error:
+    pass
+tmp
+# %%
 
-test = pd.merge(df_taxis, df_ads, left_on=['ads_id'], right_on=['id'])
-
+print("2018-03-21T20:01:00" > "2018-03-21T20:00:00.001Z")
+date_ts = "2018-03-21T20:10:00"
+d1 = datetime.strptime(date_ts, "%Y-%m-%dT%H:%M:%S")
+d2 = d1 - timedelta(minutes=10)
+L = []
+for i in range(11):
+    L.append(datetime.strfdate(d2 + timedelta(minutes=i), "%Y-%m-%dT%H:%M:%S"))
 
 # %%
 
@@ -47,6 +59,7 @@ str(D['taxi'])
 
 df_taxis = df_taxis[["ads_id", "id", "vehicle_id"]]
 df_vehicles = df_vehicles[["id", "special_need_vehicle"]]
+df_vehicles["special_need_vehicle"] = df_vehicles["special_need_vehicle"].map(lambda x: bool(x))
 df_ads = df_ads[["id", "vdm_vignette"]]
 
 test = pd.merge(df_positions, df_taxis, left_on=['taxi'], right_on=['id'])
