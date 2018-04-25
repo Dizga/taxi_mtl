@@ -41,8 +41,8 @@ d1 = datetime.strptime(date_ts, "%Y-%m-%dT%H:%M:%S")
 d2 = d1 - timedelta(minutes=10)
 L = []
 for i in range(11):
-    L.append(datetime.strfdate(d2 + timedelta(minutes=i), "%Y-%m-%dT%H:%M:%S"))
-
+    L.append(datetime.strftime(d2 + timedelta(minutes=i), "%Y-%m-%dT%H:%M:%S"))
+L
 # %%
 
 D = OrderedDict()
