@@ -28,11 +28,11 @@ df_ads = pd.read_json(requests.get(url_ads, headers=headers).content)
 conn = psycopg2.connect("host=172.20.0.4 dbname=allinall user=postgres password=postgres")
 cur = conn.cursor()
 try:
-    cur.execute("SELECT * FROM last_connection")
+    cur.execute("SELECT * FROM last_test")
     tmp = cur.fetchall()
 except psycopg2.Error:
     pass
-tmp
+
 # %%
 
 print("2018-03-21T20:01:00" > "2018-03-21T20:00:00.001Z")
