@@ -68,12 +68,6 @@ def upsert_rows(hook, table, rows, on_conflict, change_field, target_fields=None
         conn.commit()
 
 
-def calcul_time_between_date(datetime1, datetime2):
-    d1 = datetime.strptime(datetime1, "%Y-%m-%dT%H:%M:%S.%fZ")
-    d2 = datetime.strptime(datetime2, "%Y-%m-%dT%H:%M:%S.%fZ")
-    return (d2-d1).total_seconds()
-
-
 def get_taxi_data(conn_id, endpoint, **kwargs):
 
     api_hook = HttpHook(http_conn_id=conn_id, method='GET')
@@ -82,7 +76,7 @@ def get_taxi_data(conn_id, endpoint, **kwargs):
     response = api_hook.run(endpoint, headers=headers)
     # df_taxis = pd.read_json(response.content)
     data = response.json()
-    with open('{}.json'.format(endpoint), 'w') as outfile:
+    with open('dags/{}.json'.format(endpoint), 'w') as outfile:
         json.dump(data, outfile)
 
 
@@ -104,7 +98,7 @@ def get_last_connexions(conn_id, **kwargs):
     pg_hook = PostgresHook(postgres_conn_id=conn_id)
     sql = """SELECT taxi, "timestampUTC", status, operator FROM public.last_connexions"""
     df = pg_hook.get_pandas_df(sql)
-    df.to_pickle('dags/last_connexions1.pickle')
+    df.to_pickle('dags/last_connexions.pickle')
 
 
 def update_last_connexions(conn_id, **kwargs):
@@ -121,10 +115,10 @@ def update_last_connexions(conn_id, **kwargs):
 
 
 def transform_taxi_data(**kwargs):
-
+    logging.info('{ts}'.format(**kwargs))
     attributes = ['taxi', 'timestampUTC', 'status', 'operator']
-    df_last_connexions = pd.read_pickle('dags/last_connexions1.pickle')
-    with open('taxi-positions/{ts}.000Z.json'.format(**kwargs)) as data_file:
+    df_last_connexions = pd.read_pickle('dags/last_connexions.pickle')
+    with open('dags/taxi-positions/{ts}.000Z.json'.format(**kwargs)) as data_file:
         positions = json.load(data_file)
 
     taxis_connexions = OrderedDict()
