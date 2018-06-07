@@ -1,4 +1,4 @@
-# VERSION 1.9.0-2
+# VERSION 1.9.0-3
 # AUTHOR: Matthieu "Puckel_" Roisil
 # DESCRIPTION: Basic Airflow container
 # BUILD: docker build --rm -t puckel/docker-airflow .
@@ -43,7 +43,7 @@ RUN set -ex \
         python3-requests \
         mysql-client \
         mysql-server \
-        libmysqlclient-dev \
+        default-libmysqlclient-dev \
         apt-utils \
         curl \
         rsync \
@@ -62,6 +62,7 @@ RUN set -ex \
     && pip install apache-airflow[crypto,celery,postgres,hive,jdbc,mysql]==$AIRFLOW_VERSION \
     && pip install celery[redis]==4.0.2 \
     && apt-get purge --auto-remove -yqq $buildDeps \
+    && apt-get autoremove -yqq --purge \
     && apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
@@ -70,10 +71,6 @@ RUN set -ex \
         /usr/share/man \
         /usr/share/doc \
         /usr/share/doc-base
-
-COPY reqs.txt reqs.txt
-RUN chown airflow: reqs.txt
-RUN pip install -r reqs.txt
 
 COPY script/entrypoint.sh /entrypoint.sh
 COPY config/airflow.cfg ${AIRFLOW_HOME}/airflow.cfg

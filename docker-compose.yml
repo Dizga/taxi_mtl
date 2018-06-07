@@ -1,4 +1,4 @@
-version: '3'
+version: '2.1'
 services:
     postgres:
         image: postgres:9.6
@@ -11,14 +11,15 @@ services:
             - pg1-data:/var/lib/postgresql/data
 
     webserver:
-        image: puckel/docker-airflow:1.9.0-2
+        build:
+          context: .
+          dockerfile: Dockerfile
         restart: always
         depends_on:
             - postgres
         environment:
             - LOAD_EX=n
             - EXECUTOR=Local
-            - FERNET_KEY=my-local-fernet-key
         volumes:
             - ./dags:/usr/local/airflow/dags
             # Uncomment to include custom plugins
@@ -26,6 +27,11 @@ services:
         ports:
             - "8080:8080"
         command: webserver
+        healthcheck:
+            test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
 
     phpadmin:
         image: zhajor/docker-phppgadmin
@@ -37,6 +43,8 @@ services:
 
     data:
         image: postgres:9.6
+        ports:
+            - "8082:5432"
         environment:
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=postgres
